@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		339F397A20469C6F00F12BEC /* test.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 339F397920469C6F00F12BEC /* test.jpg */; };
+		339F397C2046A51300F12BEC /* CGRect+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 339F397B2046A51300F12BEC /* CGRect+Utils.swift */; };
 		33B72654204481600038F2A7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33B72653204481600038F2A7 /* AppDelegate.swift */; };
 		33B72656204481600038F2A7 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33B72655204481600038F2A7 /* ViewController.swift */; };
 		33B72659204481600038F2A7 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 33B72657204481600038F2A7 /* Main.storyboard */; };
@@ -17,6 +18,7 @@
 
 /* Begin PBXFileReference section */
 		339F397920469C6F00F12BEC /* test.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = test.jpg; sourceTree = "<group>"; };
+		339F397B2046A51300F12BEC /* CGRect+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CGRect+Utils.swift"; sourceTree = "<group>"; };
 		33B72650204481600038F2A7 /* face-coreml.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "face-coreml.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		33B72653204481600038F2A7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		33B72655204481600038F2A7 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -63,6 +65,7 @@
 				33B7265C204481600038F2A7 /* LaunchScreen.storyboard */,
 				33B7265F204481600038F2A7 /* Info.plist */,
 				339F397920469C6F00F12BEC /* test.jpg */,
+				339F397B2046A51300F12BEC /* CGRect+Utils.swift */,
 			);
 			path = "face-coreml";
 			sourceTree = "<group>";
@@ -142,6 +145,7 @@
 			files = (
 				33B72656204481600038F2A7 /* ViewController.swift in Sources */,
 				33B72654204481600038F2A7 /* AppDelegate.swift in Sources */,
+				339F397C2046A51300F12BEC /* CGRect+Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

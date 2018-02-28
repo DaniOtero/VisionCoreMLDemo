@@ -9,36 +9,25 @@
 import UIKit
 import Vision
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var loadingView: UIView!
-    var image = #imageLiteral(resourceName: "test.jpg")
+    var selectedImage : UIImage = UIImage()
     
     lazy var request : VNDetectFaceLandmarksRequest = {
         let flRequest = VNDetectFaceLandmarksRequest { [weak self] request, error in
             guard let results = request.results as? [VNFaceObservation] else {
                 return
             }
-            self?.drawNormalizedRectsOverImage(rects: results.map {$0.boundingBox})
-            let allLandmarks = results.flatMap {$0.landmarks}
-            self?.drawLandMarkRegion(regions:self?.getEyes(landmarks: allLandmarks) ?? [], color: .yellow)
-            self?.drawLandMarkRegion(regions:self?.getMouths(landmarks: allLandmarks) ?? [], color: .green)
+            self?.processResults(results: results)
         }
         return flRequest
     }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.imageView.image = image
-        self.loadingView.isHidden = false
-        
-        let handler = VNImageRequestHandler(cgImage: image.cgImage!, options: [:])
-        DispatchQueue.global().async {
-            //try! handler.perform([self.request])
-            try! handler.perform([self.request])
-        }
-        
+        self.loadingView.isHidden = true
     }
 
     override func didReceiveMemoryWarning() {
@@ -46,14 +35,51 @@ class ViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
+    @IBAction func didTapButton(_ sender: Any) {
+        let picker = UIImagePickerController()
+        picker.delegate = self
+        
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "Take picture", style: .default, handler: { _ in
+            picker.sourceType = .camera
+            self.present(picker, animated: true, completion: nil)
+        }))
+        alert.addAction(UIAlertAction(title: "Use existing one", style: .default, handler: { _ in
+            picker.sourceType = .photoLibrary
+            self.present(picker, animated: true, completion: nil)
+        }))
+        alert.addAction(UIAlertAction(title: "Use demo image", style: .default, handler: { _ in
+            self.startProcessingImage(image: #imageLiteral(resourceName: "test.jpg"))
+        }))
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    func startProcessingImage(image: UIImage) {
+        self.selectedImage = image
+        self.loadingView.isHidden = false
+        
+        let handler = VNImageRequestHandler(cgImage: image.cgImage!, options: [:])
+        DispatchQueue.global().async {
+            try! handler.perform([self.request])
+        }
+    }
+    
+    func processResults(results: [VNFaceObservation]) {
+        self.drawNormalizedRectsOverImage(rects: results.map {$0.boundingBox})
+        let allLandmarks = results.flatMap {$0.landmarks}
+        self.drawLandMarkRegion(regions:self.getEyes(landmarks: allLandmarks), color: .yellow)
+        self.drawLandMarkRegion(regions:self.getMouths(landmarks: allLandmarks), color: .green)
+    }
+    
     func drawNormalizedRectsOverImage(rects: [CGRect], color: UIColor = UIColor.red) {
-        drawOverImage(rects: rects.map {$0.toUIKitRect() * image.size})
+        drawOverImage(rects: rects.map {$0.toUIKitRect() * selectedImage.size})
     }
 
     func drawOverImage(rects: [CGRect], color: UIColor = UIColor.red) {
-        let imageRect = CGRect(x: 0, y: 0, width: image.size.width, height: image.size.height)
-        UIGraphicsBeginImageContext(image.size)
-        self.image.draw(in: imageRect)
+        let imageRect = CGRect(x: 0, y: 0, width: selectedImage.size.width, height: selectedImage.size.height)
+        UIGraphicsBeginImageContext(selectedImage.size)
+        self.selectedImage.draw(in: imageRect)
         rects.forEach { rect in
             let ctx = UIGraphicsGetCurrentContext()
             ctx?.addRect(rect)
@@ -62,18 +88,16 @@ class ViewController: UIViewController {
             ctx?.drawPath(using: .stroke)
         }
         let imageResult = UIGraphicsGetImageFromCurrentImageContext()
-        self.image = imageResult!
+        self.selectedImage = imageResult!
         DispatchQueue.main.async {
             self.loadingView.isHidden = true
             self.imageView.image = imageResult
         }
     }
     
-    func drawLandMarks(landmarks: VNFaceLandmarks2D?) {
-        guard let landmarks = landmarks,let points = landmarks.leftEye?.pointsInImage(imageSize: self.image.size), let rect = CGRect.boundingBox(points: points) else {
-            return
-        }
-        drawOverImage(rects: [rect.toUIKitRect(totalHeight: self.image.size.height)], color:.yellow)
+    func drawLandMarkRegion(regions: [VNFaceLandmarkRegion2D], color: UIColor) {
+        let rects = regions.flatMap {CGRect.boundingBox(points: $0.pointsInImage(imageSize: self.selectedImage.size))?.toUIKitRect(totalHeight: self.selectedImage.size.height)}
+        drawOverImage(rects: rects, color:color)
     }
     
     func getEyes(landmarks: [VNFaceLandmarks2D]) -> [VNFaceLandmarkRegion2D] {
@@ -86,41 +110,14 @@ class ViewController: UIViewController {
         return landmarks.flatMap {$0.outerLips}
     }
     
-    func drawLandMarkRegion(regions: [VNFaceLandmarkRegion2D], color: UIColor) {
-        let rects = regions.flatMap {CGRect.boundingBox(points: $0.pointsInImage(imageSize: self.image.size))?.toUIKitRect(totalHeight: self.image.size.height)}
-        drawOverImage(rects: rects, color:color)
-    }
-}
+    // MARK - UIImagePickerControllerDelegate
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+        debugPrint(info)
+        picker.dismiss(animated: true, completion: nil)
+        guard let image = info[UIImagePickerControllerOriginalImage] as? UIImage else {
+            return
+        }
 
-extension CGRect {
-    static func *(left: CGRect, right: CGSize) -> CGRect {
-        let width = right.width
-        let height = right.height
-        return CGRect(x: left.origin.x * width, y: left.origin.y * height, width: left.size.width * width, height: left.size.height * height)
-    }
-    
-    func toUIKitRect() -> CGRect {
-        return self.toUIKitRect(totalHeight: 1)
-    }
-    
-    func toUIKitRect(totalHeight: CGFloat) -> CGRect {
-        return CGRect(x: self.origin.x, y: totalHeight - self.origin.y - self.size.height, width: self.size.width, height: self.size.height)
-    }
-    
-    static func boundingBox(points: [CGPoint]) -> CGRect? {
-        guard points.count > 2 else {
-            return nil
-        }
-        var minX = points[0].x
-        var maxX = points[0].x
-        var minY = points[0].y
-        var maxY = points[0].y
-        points.forEach { point in
-            minX = min(minX,point.x)
-            maxX = max(maxX,point.x)
-            minY = min(minY,point.y)
-            maxY = max(maxY,point.y)
-        }
-        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        startProcessingImage(image: image)
     }
 }
